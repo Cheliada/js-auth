@@ -1,14 +1,383 @@
-// Підключаємо роутер до бек-енду
+// Підключаємо технологію express для back-end сервера
 const express = require('express')
+// Cтворюємо роутер - місце, куди ми підключаємо ендпоїнти
 const router = express.Router()
 
-// Підключіть файли роутів
-const test = require('./test')
-// Підключіть інші файли роутів, якщо є
+const { User } = require('../class/user')
+const { Confirm } = require('../class/confirm')
+const { Session } = require('../class/session')
 
-// Об'єднайте файли роутів за потреби
-router.use('/', test)
-// Використовуйте інші файли роутів, якщо є
+User.create({
+  email: 'user@mail.com',
+  password: 1234,
+  role: 1,
+})
 
-// Експортуємо глобальний роутер
+User.create({
+  email: 'admin@mail.com',
+  password: 1234,
+  role: 2,
+})
+
+User.create({
+  email: 'dev@mail.com',
+  password: 1234,
+  role: 3,
+})
+
+// ================================================================
+
+// router.get Створює нам один ентпоїнт
+
+// ↙️ тут вводимо шлях (PATH) до сторінки
+router.get('/signup', function (req, res) {
+  // res.render генерує нам HTML сторінку
+
+  // ↙️ cюди вводимо назву файлу з сontainer
+  return res.render('signup', {
+    // вказуємо назву контейнера
+    name: 'signup',
+    // вказуємо назву компонентів
+    component: [
+      'back-button',
+      'field',
+      'field-password',
+      'field-checkbox',
+      'field-role',
+    ],
+
+    // вказуємо назву сторінки
+    title: 'Signup page',
+    // ... сюди можна далі продовжувати додавати потрібні технічні дані, які будуть використовуватися в layout
+
+    // вказуємо дані,
+    data: {
+      role: [
+        { value: User.USER_ROLE.USER, text: 'User' },
+        { value: User.USER_ROLE.ADMIN, text: 'Admin' },
+        {
+          value: User.USER_ROLE.DEVELOPER,
+          text: 'Developer',
+        },
+      ],
+    },
+  })
+  // ↑↑ сюди вводимо JSON дані
+})
+
+router.post('/signup', function (req, res) {
+  const { email, password, role } = req.body
+
+  if (!email || !password || !role) {
+    return res.status(400).json({
+      message: 'Error. There are missing required fields',
+    })
+  }
+
+  try {
+    const user = User.getByEmail(email)
+
+    if (user) {
+      return res.status(400).json({
+        message: 'This user already exist',
+      })
+    }
+
+    const newUser = User.create({ email, password, role })
+
+    const session = Session.create(newUser)
+
+    Confirm.create(newUser.email)
+
+    return res.status(200).json({
+      message: 'You have successfully signed up',
+      session,
+    })
+  } catch (err) {
+    return res.status(400).json({
+      message: 'Something went wrong. Try again',
+    })
+  }
+})
+
+// ================================================================
+
+// router.get Створює нам один ентпоїнт
+
+// ↙️ тут вводимо шлях (PATH) до сторінки
+router.get('/recovery', function (req, res) {
+  // res.render генерує нам HTML сторінку
+
+  // ↙️ cюди вводимо назву файлу з сontainer
+  return res.render('recovery', {
+    // вказуємо назву контейнера
+    name: 'recovery',
+    // вказуємо назву компонентів
+    component: ['back-button', 'field'],
+
+    // вказуємо назву сторінки
+    title: 'Recovery page',
+    // ... сюди можна далі продовжувати додавати потрібні технічні дані, які будуть використовуватися в layout
+
+    // вказуємо дані,
+    data: {},
+  })
+  // ↑↑ сюди вводимо JSON дані
+})
+
+router.post('/recovery', function (req, res) {
+  const { email } = req.body
+
+  console.log(email)
+
+  if (!email) {
+    return res.status(400).json({
+      message: 'Error. There are missing required fields',
+    })
+  }
+
+  try {
+    const user = User.getByEmail(email)
+
+    if (!user) {
+      return res.status(400).json({
+        message:
+          'This email address does not exist or incorrect. Try again',
+      })
+    }
+
+    Confirm.create(email)
+
+    return res.status(200).json({
+      message:
+        'An email with a verification code was just sent',
+    })
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+    })
+  }
+})
+
+// ================================================================
+
+// router.get Створює нам один ентпоїнт
+
+// ↙️ тут вводимо шлях (PATH) до сторінки
+router.get('/recovery-confirm', function (req, res) {
+  // res.render генерує нам HTML сторінку
+
+  // ↙️ cюди вводимо назву файлу з сontainer
+  return res.render('recovery-confirm', {
+    // вказуємо назву контейнера
+    name: 'recovery-confirm',
+    // вказуємо назву компонентів
+    component: ['back-button', 'field', 'field-password'],
+
+    // вказуємо назву сторінки
+    title: 'Recovery confirm page',
+    // ... сюди можна далі продовжувати додавати потрібні технічні дані, які будуть використовуватися в layout
+
+    // вказуємо дані,
+    data: {},
+  })
+  // ↑↑ сюди вводимо JSON дані
+})
+
+router.post('/recovery-confirm', function (req, res) {
+  const { password, code } = req.body
+
+  console.log(password, code)
+
+  if (!code || !password) {
+    return res.status(400).json({
+      message: 'Error. There are missing required fields',
+    })
+  }
+
+  try {
+    const email = Confirm.getData(Number(code))
+
+    if (!email) {
+      return res.status(400).json({
+        message: 'The code does not exist',
+      })
+    }
+
+    const user = User.getByEmail(email)
+
+    if (!user) {
+      return res.status(400).json({
+        message: 'No account found with that email address',
+      })
+    }
+
+    user.password = password
+
+    console.log(user)
+
+    const session = Session.create(user)
+
+    return res.status(200).json({
+      message: 'Password changed successfully',
+      session,
+    })
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+    })
+  }
+})
+
+// ================================================================
+
+// router.get Створює нам один ентпоїнт
+
+// ↙️ тут вводимо шлях (PATH) до сторінки
+router.get('/signup-confirm', function (req, res) {
+  // res.render генерує нам HTML сторінку
+  const { renew, email } = req.query
+
+  if (renew) {
+    Confirm.create(email)
+  }
+
+  // ↙️ cюди вводимо назву файлу з сontainer
+  return res.render('signup-confirm', {
+    // вказуємо назву контейнера
+    name: 'signup-confirm',
+    // вказуємо назву компонентів
+    component: ['back-button', 'field'],
+
+    // вказуємо назву сторінки
+    title: 'Signup confirm page',
+    // ... сюди можна далі продовжувати додавати потрібні технічні дані, які будуть використовуватися в layout
+
+    // вказуємо дані,
+    data: {},
+  })
+  // ↑↑ сюди вводимо JSON дані
+})
+
+router.post('/signup-confirm', function (req, res) {
+  const { code, token } = req.body
+
+  console.log(code)
+
+  if (!code || !token) {
+    return res.status(400).json({
+      message: 'Error. There are missing required fields',
+    })
+  }
+
+  //   if (code.length !== 4) {
+  //     return res.status(400).json({
+  //       message: 'Error. The code must be a 4-digit number',
+  //     })
+  //   }
+
+  try {
+    const session = Session.get(token)
+
+    if (!session) {
+      return res.status(400).json({
+        message: "Error. We can't sign into your account",
+      })
+    }
+
+    const email = Confirm.getData(code)
+
+    if (!email) {
+      return res.status(400).json({
+        message: 'This code does not exist',
+      })
+    }
+
+    if (email !== session.user.email) {
+      return res.status(400).json({
+        message: 'This code is not valid',
+      })
+    }
+
+    const user = User.getByEmail(session.user.email)
+    user.isConfirm = true
+    session.user.isConfirm = true
+
+    return res.status(200).json({
+      message: 'Your email address has been verified',
+      session,
+    })
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+    })
+  }
+
+  //   console.log(code, token)
+})
+
+// ================================================================
+
+// router.get Створює нам один ентпоїнт
+
+// ↙️ тут вводимо шлях (PATH) до сторінки
+router.get('/login', function (req, res) {
+  // res.render генерує нам HTML сторінку
+
+  // ↙️ cюди вводимо назву файлу з сontainer
+  return res.render('login', {
+    // вказуємо назву контейнера
+    name: 'login',
+    // вказуємо назву компонентів
+    component: ['back-button', 'field', 'field-password'],
+
+    // вказуємо назву сторінки
+    title: 'Login page',
+    // ... сюди можна далі продовжувати додавати потрібні технічні дані, які будуть використовуватися в layout
+
+    // вказуємо дані,
+    data: {},
+  })
+  // ↑↑ сюди вводимо JSON дані
+})
+
+router.post('/login', function (req, res) {
+  const { email, password } = req.body
+
+  if (!email || !password) {
+    return res.status(400).json({
+      message: 'Error. There are missing required fields',
+    })
+  }
+
+  try {
+    const user = User.getByEmail(email)
+
+    if (!user) {
+      return res.status(400).json({
+        message: 'This user does not exist',
+      })
+    }
+
+    if (user.password !== password) {
+      return res.status(400).json({
+        message:
+          'Error. The password is incorrect. Try again',
+      })
+    }
+
+    const session = Session.create(user)
+
+    return res.status(200).json({
+      message: 'You have successfully signed in',
+      session,
+    })
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+    })
+  }
+})
+
+// Підключаємо роутер до бек-енду
 module.exports = router

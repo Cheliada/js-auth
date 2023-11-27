@@ -1,0 +1,54 @@
+{{!
+Це код container файлу для index сторінки,
+в якому міститься код, котрий буде віддаватися по шляху (PATH) - "/"
+}}
+
+<div class="page page--background">
+	<header>
+		{{> back-button}}
+	</header>
+
+	<form class="page__section">
+		<h1 class="page__title">Sign up</h1>
+		<div class="form">
+			<div class="form__item">
+				{{> field label="Email address" type="email" name="email" placeholder="Your email address"
+				action="signupForm.change" }}
+				<span name="email" class="form__error">Error</span>
+			</div>
+			<div class="form__item">
+				{{> field-password label="Password" type="{{type}}" name="password" placeholder="Enter your password"
+				action="signupForm.change" }}
+				<span name="password" class="form__error">Error</span>
+			</div>
+			<div class="form__item">
+				{{> field-password label="Repeat password" placeholder="Enter your password" type="{{type}}"
+				name="passwordAgain"
+				action="signupForm.change" }}
+				<span name="passwordAgain" class="form__error">Error</span>
+			</div>
+			<div class="form__item">
+				{{> field-role label="Role" type="{{type}}" name="role"
+				action="signupForm.change" placeholder="Choose a role" list=data.role}}
+				<span name="role" class="form__error">Error</span>
+			</div>
+			<div class="form__item">
+				{{> field-checkbox label="Agree to terms and conditions" name="isConfirm"
+				action="signupForm.change" }}
+				<span name="isConfirm" class="form__error">Error</span>
+			</div>
+		</div>
+
+		<button onclick="signupForm.submit()" class="button button--disabled" type="button">Sign up</button>
+		<span class="alert alert--disabled">Attention, an error!</span>
+
+		<span class="link__prefix">Already have an account? <a href="/login" class="link">Sign in</a></span>
+	</form>
+</div>
+
+{{!
+Цей код містить лише те, що буде виводитись в
+
+<body>
+	Адже наш layout/default.hbs має вже структуру HTML
+	}}
